@@ -1,0 +1,38 @@
+name: 功能建议
+description: 提议一个符合本地优先和用户控制原则的改进
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: 请描述用户问题而不是真实个人经历或档案内容。不要附加真实 vault、照片或健康数据。
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: 提交确认
+      options:
+        - label: 该建议不要求上传或托管用户的真实个人数据
+          required: true
+        - label: 我已说明用户问题，而不只是指定实现方案
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的用户问题
+      placeholder: 用户在什么场景下会遇到什么困难？
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: 理想结果
+      placeholder: 完成后用户可以更简单或更安全地做什么？
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: 兼容性与隐私影响
+      description: 是否影响 schema、工具参数、备份格式、图片存储或既有档案？不确定可填写“不确定”。
+    validations:
+      required: true

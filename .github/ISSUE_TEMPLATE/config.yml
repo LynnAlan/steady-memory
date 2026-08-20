@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密安全漏洞报告
+    url: https://github.com/LynnAlan/steady-memory/security/advisories/new
+    about: 请通过 Security Advisory 报告漏洞，不要公开敏感细节。

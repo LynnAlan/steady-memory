@@ -10,6 +10,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, TextIO
 
+from . import __version__
 from .archive import ArchiveError, ValidationError
 from .tools import SteadyTools
 
@@ -23,7 +24,7 @@ def handle_mcp_request(tools: SteadyTools, request: dict[str, Any]) -> dict[str,
     request_id, method = request.get("id"), request.get("method")
     if request_id is None: return None
     try:
-        if method == "initialize": result = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {"listChanged": False}}, "serverInfo": {"name": "steady-memory", "version": "0.1.0"}}
+        if method == "initialize": result = {"protocolVersion": "2024-11-05", "capabilities": {"tools": {"listChanged": False}}, "serverInfo": {"name": "steady-memory", "version": __version__}}
         elif method == "ping": result = {}
         elif method == "tools/list": result = {"tools": tools.definitions}
         elif method == "tools/call":
@@ -46,7 +47,7 @@ def run_mcp(tools: SteadyTools, input_stream: TextIO | None = None, output_strea
 
 def make_http_handler(tools: SteadyTools, token: str):
     class Handler(BaseHTTPRequestHandler):
-        server_version = "SteadyMemory/0.1"
+        server_version = f"SteadyMemory/{__version__}"
         def log_message(self, format: str, *args: Any) -> None: sys.stderr.write("[steady-memory] " + format % args + "\n")
         def send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
             raw = json.dumps(payload, ensure_ascii=False).encode(); self.send_response(status.value); self.send_header("Content-Type", "application/json; charset=utf-8"); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
