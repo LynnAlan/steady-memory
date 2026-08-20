@@ -10,6 +10,7 @@ __pycache__/
 secrets/
 vault/
 media/
+assets/
 dist/
 build/
 *.egg-info/

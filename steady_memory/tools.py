@@ -11,7 +11,7 @@ from typing import Any, Callable
 from .archive import (SCHEMA_VERSION, ArchiveError, ArchivePaths, ArchiveStore,
                       ConflictError, PermissionDenied, ValidationError, fmt, number, parse_date)
 from .backup import backup_archive as create_backup, verify_backup as check_backup
-from .assets import record_asset as ingest_asset
+from .assets import indexed_media, media_root, record_asset as ingest_asset
 from .index import SearchIndex
 from .migrations import migrate_archive, schema_status
 
@@ -45,13 +45,13 @@ class SteadyTools:
             "record_body_metrics": (self.record_body_metrics, METRICS_WRITE, "Record comparable body metrics.", schema({"date": {"type": "string"}, "weight_kg": {"type": "number"}, "waist_cm": {"type": "number"}, "body_fat_pct": {"type": "number"}, "skeletal_muscle_kg": {"type": "number"}, "source": {"type": "string"}, "condition": {"type": "string"}, "note": {"type": "string"}, "replace": {"type": "boolean"}}, ["date", "source"])),
             "record_exercise": (self.record_exercise, METRICS_WRITE, "Record an exercise session.", schema({"date": {"type": "string"}, "activity": {"type": "string"}, "start_time": {"type": "string"}, "duration_min": {"type": "number"}, "distance_km": {"type": "number"}, "avg_hr_bpm": {"type": "number"}, "max_hr_bpm": {"type": "number"}, "calories_kcal": {"type": "number"}, "rpe": {"type": "number"}, "source": {"type": "string"}, "note": {"type": "string"}, "replace": {"type": "boolean"}}, ["date", "activity", "source"])),
             "record_daily_event": (self.record_daily_event, JOURNAL_WRITE, "Append an event to the daily timeline.", schema({"date": {"type": "string"}, "section": {"type": "string"}, "content": {"type": "string"}}, ["date", "section", "content"])),
-            "record_asset": (self.record_asset, JOURNAL_WRITE, "Copy a local asset into the archive and index it.", schema({"date": {"type": "string"}, "category": {"type": "string", "enum": ["progress", "exercise", "journal", "other"]}, "source_path": {"type": "string"}, "note": {"type": "string"}}, ["date", "category", "source_path"])),
+            "record_asset": (self.record_asset, JOURNAL_WRITE, "Copy a local asset into Git-ignored media storage and index it.", schema({"date": {"type": "string"}, "category": {"type": "string", "enum": ["progress", "exercise", "journal", "other"]}, "source_path": {"type": "string"}, "note": {"type": "string"}}, ["date", "category", "source_path"])),
             "append_long_term_memory": (self.append_long_term_memory, MEMORY_WRITE, "Append user-confirmed stable memory.", schema({"category": {"type": "string", "enum": ["health", "life", "preferences"]}, "content": {"type": "string"}, "confirmed_stable": {"type": "boolean"}}, ["category", "content", "confirmed_stable"])),
             "patch_long_term_memory": (self.patch_long_term_memory, MEMORY_WRITE, "Correct one uniquely matching long-term memory passage.", schema({"category": {"type": "string", "enum": ["health", "life", "preferences"]}, "old_text": {"type": "string"}, "new_text": {"type": "string"}}, ["category", "old_text", "new_text"])),
             "validate_archive": (self.validate_archive, READ, "Validate archive structure and data.", schema({})),
             "rebuild_index": (self.rebuild_index, MAINTAIN, "Rebuild the disposable search index.", schema({})),
             "migrate_archive": (self.migrate_archive, MAINTAIN, "Migrate archive schema forward.", schema({})),
-            "backup_archive": (self.backup_archive, MAINTAIN, "Create a verifiable ZIP backup.", schema({"output_path": {"type": "string"}, "replace": {"type": "boolean"}}, ["output_path"])),
+            "backup_archive": (self.backup_archive, MAINTAIN, "Create a verifiable ZIP backup; media is opt-in.", schema({"output_path": {"type": "string"}, "replace": {"type": "boolean"}, "include_media": {"type": "boolean"}}, ["output_path"])),
             "verify_backup": (self.verify_backup, READ, "Verify a backup ZIP.", schema({"backup_path": {"type": "string"}}, ["backup_path"])),
         }
 
@@ -242,7 +242,8 @@ class SteadyTools:
 
     def rebuild_index(self) -> dict[str, Any]: return self.index.rebuild()
     def migrate_archive(self) -> dict[str, Any]: return migrate_archive(self.paths)
-    def backup_archive(self, output_path: str, replace: bool = False) -> dict[str, Any]: return create_backup(self.store, output_path, replace=replace)
+    def backup_archive(self, output_path: str, replace: bool = False, include_media: bool = False) -> dict[str, Any]:
+        return create_backup(self.store, output_path, replace=replace, include_media=include_media)
     def verify_backup(self, backup_path: str) -> dict[str, Any]: return check_backup(backup_path)
 
     def validate_archive(self) -> dict[str, Any]:
@@ -282,4 +283,25 @@ class SteadyTools:
                     if abs(float(row["bmi"]) - expected_bmi) > .011: errors.append(f"BMI mismatch: {row['date']}")
         except (ArchiveError, json.JSONDecodeError, ValueError) as exc:
             errors.append(f"profile or weight validation failed: {exc}")
-        return {"valid": not errors, "schema": status, "errors": errors, "warnings": warnings, "index_current": self.index.is_current(), "canonical_files": len(self.store.canonical_files())}
+        media_files: list[Path] = []
+        try:
+            media_files, media_errors = indexed_media(self.store)
+            errors.extend(media_errors)
+            configured_media_root = self.store.relative(media_root(self.store))
+        except ArchiveError as exc:
+            errors.append(str(exc)); configured_media_root = None
+        media_bytes = sum(path.stat().st_size for path in media_files)
+        ignore_text = self.store.read_text(self.paths.root / ".gitignore")
+        ignored_patterns = {line.strip().rstrip("/") for line in ignore_text.splitlines()
+                            if line.strip() and not line.lstrip().startswith("#")}
+        if configured_media_root and configured_media_root.rstrip("/") not in ignored_patterns:
+            warnings.append(f"media directory is not excluded by .gitignore: {configured_media_root}")
+        legacy_assets = self.paths.root / "assets"
+        if legacy_assets.is_dir() and "assets" not in ignored_patterns:
+            warnings.append("legacy assets/ directory is not excluded by .gitignore")
+        if media_files:
+            warnings.append("media files are excluded from Git and default ZIP backups")
+        return {"valid": not errors, "schema": status, "errors": errors, "warnings": warnings,
+                "index_current": self.index.is_current(), "canonical_files": len(self.store.canonical_files()),
+                "media": {"root": configured_media_root, "files": len(media_files), "bytes": media_bytes,
+                          "included_in_default_backup": False}}

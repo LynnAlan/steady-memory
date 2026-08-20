@@ -1,9 +1,15 @@
 # Agent 接入指南
 
+## 项目内零配置模式
+
+对于能在本地项目中执行命令的 Agent，用户只需把 Steady Memory 文件夹交给它并直接对话。项目根目录的 `AGENTS.md` 指示 Agent 在第一次记录或查询时运行 `python -m steady_memory setup`。这会创建被 Git 忽略的 `vault/`，后续命令会自动发现该档案，不要求用户配置路径或手写 JSON。
+
+Agent 应把自然语言转换成窄工具调用，不应要求用户自己执行命令。MCP 适合长期挂载或不读取项目规则的客户端，但不是项目模式的使用前提。
+
 ## 推荐顺序
 
-1. 本地 MCP stdio：无需开放端口，适合桌面 Agent。
-2. CLI JSON：适合能执行命令但不支持 MCP 的 Agent。
+1. 项目内 CLI：Agent 读取 `AGENTS.md` 后自动初始化和调用。
+2. 本地 MCP stdio：无需开放端口，适合长期挂载的桌面 Agent。
 3. 本地 HTTP：只用于兼容，必须使用 Bearer Token。
 
 ## 会话开始

@@ -26,6 +26,7 @@ After a write, tell the user what was recorded and which files changed.
 
 ## Connection
 
+- Project mode: from the Steady Memory repository, run `python -m steady_memory setup` once; later commands automatically discover `vault/`.
 - CLI: `python -m steady_memory --root <vault> call <tool> --arguments <json>`
 - MCP: `python -m steady_memory --root <vault> mcp`
 - Read-only MCP: add `--read-only` before `mcp`

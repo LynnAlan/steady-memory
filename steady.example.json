@@ -6,5 +6,5 @@
     "weight": "kg"
   },
   "record_policy": "explicit",
-  "media_root": null
+  "media_root": "media"
 }

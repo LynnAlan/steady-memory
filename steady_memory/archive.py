@@ -81,10 +81,13 @@ class ArchivePaths:
 
     @classmethod
     def discover(cls, root: str | os.PathLike[str] | None = None) -> "ArchivePaths":
-        candidate = Path(root or os.environ.get("STEADY_ROOT") or Path.cwd()).resolve()
+        configured = root or os.environ.get("STEADY_ROOT")
+        candidate = Path(configured or Path.cwd()).resolve()
+        if not configured and not (candidate / MANIFEST).is_file() and (candidate / "vault" / MANIFEST).is_file():
+            candidate = candidate / "vault"
         manifest = candidate / MANIFEST
         if not manifest.is_file():
-            raise ValidationError(f"{candidate} is not initialized; run `steady-memory --root PATH init`")
+            raise ValidationError(f"{candidate} is not initialized; run `python -m steady_memory setup`")
         return cls(candidate)
 
     @property
@@ -201,3 +204,7 @@ class ArchiveStore:
         candidates += sorted((self.paths.root / "data").glob("*.csv"))
         candidates += sorted((self.paths.root / "data").glob("*.json"))
         return [path for path in candidates if path.is_file()]
+
+    def backup_files(self) -> list[Path]:
+        candidates = self.canonical_files() + [self.paths.root / "AGENTS.md", self.paths.root / ".gitignore"]
+        return list(dict.fromkeys(path for path in candidates if path.is_file()))

@@ -11,8 +11,7 @@ $prefix = @("-m", "steady_memory", "--root", $Root)
 if ($ReadOnly) { $prefix += "--read-only" }
 
 if ($Command -eq "call") {
-  $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Arguments))
-  & $python @prefix call $Tool --arguments-base64 $encoded
+  & $python @prefix call $Tool --arguments $Arguments
 } else {
   & $python @prefix $Command
 }
