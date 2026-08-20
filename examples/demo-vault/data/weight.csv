@@ -1,0 +1,4 @@
+date,weight_kg,bmi,condition,note
+2026-01-01,70.0,24.80,晨起空腹,synthetic demo
+2026-01-02,69.8,24.73,晨起空腹,synthetic demo
+2026-01-03,69.7,24.70,晨起空腹,synthetic demo

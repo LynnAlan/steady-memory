@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "steady-memory"
+version = "0.1.0"
+description = "Local-first, model-independent personal memory archive"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "steady-memory contributors"}]
+dependencies = []
+
+[project.scripts]
+steady-memory = "steady_memory.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["steady_memory*"]

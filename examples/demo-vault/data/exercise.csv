@@ -1,0 +1,2 @@
+date,activity,start_time,duration_min,distance_km,avg_hr_bpm,max_hr_bpm,calories_kcal,rpe,source,note
+2026-01-02,步行,18:30,30,2.4,112,128,,3,演示手表,synthetic demo

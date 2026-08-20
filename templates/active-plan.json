@@ -1,0 +1,10 @@
+{
+  "id": "starter-plan",
+  "version": 1,
+  "status": "active",
+  "effective_from": "YYYY-MM-DD",
+  "title": "Starter plan",
+  "goal": "Define a sustainable first step",
+  "schedule": {},
+  "notes": []
+}

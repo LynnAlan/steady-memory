@@ -1,0 +1,13 @@
+{
+  "id": "starter-plan",
+  "version": 1,
+  "status": "active",
+  "effective_from": "2026-01-01",
+  "title": "四周活动习惯计划",
+  "goal": "稳定完成每周三次活动",
+  "schedule": {
+    "walking": "每周两次，每次 30 分钟",
+    "strength": "每周一次基础力量"
+  },
+  "notes": ["疲劳时缩短时长，不补偿性加练"]
+}
