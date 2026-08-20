@@ -13,6 +13,7 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 from steady_memory.adapters import handle_mcp_request, make_http_handler
+from steady_memory import __version__
 from steady_memory.archive import ConflictError, PermissionDenied, ValidationError
 from steady_memory.migrations import initialize_archive
 from steady_memory.tools import READ, METRICS_WRITE, SteadyTools
@@ -120,6 +121,8 @@ class SteadyMemoryTests(unittest.TestCase):
     def test_mcp_exposes_structured_contract(self) -> None:
         response = handle_mcp_request(self.tools, {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
         self.assertIn("tools", response["result"])
+        initialized = handle_mcp_request(self.tools, {"jsonrpc": "2.0", "id": 2, "method": "initialize"})
+        self.assertEqual(initialized["result"]["serverInfo"]["version"], __version__)
 
     def test_http_requires_valid_bearer_token(self) -> None:
         token = "synthetic-secret"
